@@ -1,4 +1,6 @@
 import sys
+from pathlib import Path
+
 sys.path.append('core')
 
 import argparse
@@ -23,7 +25,7 @@ def load_image(imfile):
     return img[None].to(DEVICE)
 
 
-def viz(img, flo):
+def viz(img, flo, filepath):
     img = img[0].permute(1,2,0).cpu().numpy()
     flo = flo[0].permute(1,2,0).cpu().numpy()
     
@@ -31,12 +33,13 @@ def viz(img, flo):
     flo = flow_viz.flow_to_image(flo)
     img_flo = np.concatenate([img, flo], axis=0)
 
-    # import matplotlib.pyplot as plt
-    # plt.imshow(img_flo / 255.0)
-    # plt.show()
+    # Save visualization as PNG file
+    filepath = Path(filepath)
+    relative_path = filepath.relative_to(filepath.parents[1])
+    target_filepath = Path(f"/cvlabdata2/home/gwizdala/raft/{relative_path}")
+    target_filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    cv2.imshow('image', img_flo[:, :, [2,1,0]]/255.0)
-    cv2.waitKey()
+    Image.fromarray(img_flo.astype(np.uint8)).save(target_filepath)
 
 
 def demo(args):
@@ -60,7 +63,7 @@ def demo(args):
             image1, image2 = padder.pad(image1, image2)
 
             flow_low, flow_up = model(image1, image2, iters=20, test_mode=True)
-            viz(image1, flow_up)
+            viz(image1, flow_up, imfile1)
 
 
 if __name__ == '__main__':
